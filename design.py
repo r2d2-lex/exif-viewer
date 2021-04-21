@@ -27,6 +27,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.groupBox)
         self.verticalLayout.setObjectName("verticalLayout")
         self.listFiles = QtWidgets.QListWidget(self.groupBox)
+        self.listFiles.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.listFiles.setObjectName("listFiles")
         self.verticalLayout.addWidget(self.listFiles)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
