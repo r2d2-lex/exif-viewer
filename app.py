@@ -16,6 +16,7 @@ class MyWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.btnExit.clicked.connect(self.exit_program)
         self.btnDelete.clicked.connect(self.delete_exif_info)
         self.listFiles.itemClicked.connect(self.selection_changed)
+        self.btnSave.clicked.connect(self.print_status)
         # self.listFiles.itemPressed.connect(self.multi_selection_changed)
 
         self.image_folder = ''
@@ -36,7 +37,7 @@ class MyWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.list_exif_files = []
         for i in range(len(items)):
             self.list_exif_files.append(str(self.listFiles.selectedItems()[i].text()))
-        print(f'List files: {self.list_exif_files}')
+        self.print_status(f'ВЫбранные файлы: {self.list_exif_files}')
 
     def selection_changed(self, item):
         self.multi_selection_changed()
@@ -46,7 +47,7 @@ class MyWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
                 self.list_exif_files.append(file_name)
 
             self.listAttrs.clear()
-            print(f'Вы кликнули: {file_name}')
+            self.print_status(f'Вы кликнули: {file_name}')
             image_full_path = self.get_full_path(file_name)
             if self.chkPreview.isChecked():
                 self.show_image(image_full_path)
@@ -78,10 +79,17 @@ class MyWindow(QtWidgets.QMainWindow, design.Ui_MainWindow):
             for filename in self.list_exif_files:
                 print(f'Delete info for {filename}')
                 with ExifImage(self.get_full_path(filename)) as exif_file:
-                    exif_file.delete_exif_data()
+                    if self.chkAlterName.isChecked():
+                        exif_file.delete_exif_data(new_name=True)
+                    else:
+                        exif_file.delete_exif_data()
 
     def get_full_path(self, file_name=''):
         return os.path.join(self.image_folder, file_name)
+
+    def print_status(self, message=' '):
+        self.statusbar.showMessage(message)
+        print(message)
 
     @staticmethod
     def exit_program():
@@ -125,18 +133,29 @@ class ExifImage:
         print(f"Image {message}")
         return status
 
-    def delete_exif_data(self):
+    def delete_exif_data(self, new_name=False):
         if self.image_exif.has_exif:
             self.image_exif.delete_all()
-            with open(f'{self.name}_mdf', 'wb') as image_file:
-                image_file.write(self.image_exif.get_file())
-            # self.image_file.write(self.image_exif.get_file())
+            if new_name:
+                self.write_with_new_name()
+            else:
+                self.write_image_exif()
 
-    def delete_exif_tag(self, tag: str):
+    def delete_exif_tag(self, tag: str, new_name=False):
         if self.image_exif.has_exif:
             self.image_exif.delete(tag)
-            self.image_file.write(self.image_exif.get_file())
-            self.image_file.close()
+            if new_name:
+                self.write_with_new_name()
+            else:
+                self.write_image_exif()
+
+    def write_with_new_name(self):
+        with open(f'{self.name}_mdf', 'wb') as image_file:
+            image_file.write(self.image_exif.get_file())
+
+    def write_image_exif(self):
+        self.image_file.seek(0)
+        self.image_file.write(self.image_exif.get_file())
 
     def show_exif_tags_info(self) -> list:
         attrs_list = []
